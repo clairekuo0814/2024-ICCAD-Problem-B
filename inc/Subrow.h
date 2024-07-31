@@ -5,7 +5,10 @@
 #include <iostream>
 #include <set>
 #include "Cell.h"
+#include "Row.h"
 
+
+class Row;
 class Subrow{
 private:
     double startX;
@@ -13,6 +16,7 @@ private:
     double freeWidth;
     double height;
     std::set<Cell *> reject_cells;
+    int rowIdx;
 
 public:
     Subrow();
@@ -24,6 +28,7 @@ public:
     void setFreeWidth(double freeWidth);
     void setHeight(double height);
     void addRejectCell(Cell *cell);
+    void setRowIdx(int rowIdx);
 
     // Getters
     double getStartX()const;
@@ -31,6 +36,7 @@ public:
     double getFreeWidth()const;
     double getHeight()const;
     bool hasCell(Cell *cell);
+    int getRowIdx()const;
 
     friend std::ostream &operator<<(std::ostream &os, const Subrow &subrow);
 };

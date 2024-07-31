@@ -12,6 +12,8 @@
 // Row class used in legalizer code
 // Will update the result of the struct::PlacementRow
 
+typedef std::pair<Point, Subrow *> PointWithSubrow;
+
 class Node;
 class Row{
 private:
@@ -21,7 +23,6 @@ private:
     int numOfSites;
     double endX;
     std::vector<Subrow *> subrows;
-    std::set<Cell *> reject_cells;
     std::vector<Node *> FFOnThisRow;    // for detail placement
 
 public:
@@ -35,7 +36,6 @@ public:
     void setNumOfSite(int numOfSites);
     void setEndX(double endX);
     void addSubrows(Subrow *subrow);
-    void addRejectCell(Cell *cell);
     void addFFs(Node *ff);  // for detail placement
 
     // Getters
@@ -45,7 +45,6 @@ public:
     int getNumOfSite()const;
     double getEndX()const;
     std::vector<Subrow *> &getSubrows();
-    bool hasCell(Cell *cell);
     std::vector<Node *> &getFFs();  // for detail placement 
 
     // Helper function
@@ -60,7 +59,7 @@ public:
     c) Part after the gate
     @bug memory leak in this function, need to consider implement garbage collection
     */
-    void slicing(Node *gate);
+    void slicing(Node *gate, std::vector<PointWithSubrow>& toRemoveSubrow, std::vector<PointWithSubrow>& toInsertSubrow);
 
     /**
     @brief Check if the current row start from startX to endX have empty space with height h or not

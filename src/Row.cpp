@@ -39,9 +39,9 @@ void Row::addSubrows(Subrow *subrow){
     subrows.push_back(subrow);
 }
 
-void Row::addRejectCell(Cell *cell){
-    reject_cells.insert(cell);
-}
+// void Row::addRejectCell(Cell *cell){
+//     reject_cells.insert(cell);
+// }
 
 void Row::addFFs(Node *ff){
     FFOnThisRow.push_back(ff);
@@ -72,18 +72,18 @@ std::vector<Subrow *> &Row::getSubrows(){
     return subrows;
 }
 
-bool Row::hasCell(Cell *cell){
-    if(reject_cells.count(cell)){
-        return true;
-    }
-    return false;
-}
+// bool Row::hasCell(Cell *cell){
+//     if(reject_cells.count(cell)){
+//         return true;
+//     }
+//     return false;
+// }
 
 std::vector<Node *> &Row::getFFs(){
     return FFOnThisRow;
 }
 
-void Row::slicing(Node *gate) {
+void Row::slicing(Node *gate, std::vector<PointWithSubrow>& toRemoveSubrow, std::vector<PointWithSubrow>& toInsertSubrow) {
     assert(subrows.size() != 0 && "No more subrow can be used in this row!");
     double gateStartX = gate->getLGCoor().x;
     double gateEndX = gateStartX + gate->getW();
@@ -112,6 +112,7 @@ void Row::slicing(Node *gate) {
                 newSubrowBefore->setFreeWidth(newSubrowBefore->getEndX() - newSubrowBefore->getStartX());
                 newSubrowBefore->setHeight(subrowHeight);
                 newSubrows.push_back(newSubrowBefore);
+                toInsertSubrow.push_back(std::make_pair(Point(subrowStartX, rowStartY), newSubrowBefore));
             }
             
             //b) Part under the gate
@@ -124,6 +125,7 @@ void Row::slicing(Node *gate) {
                 newSubrow->setFreeWidth(newSubrow->getEndX() - newSubrow->getStartX());
                 newSubrow->setHeight(gateStartY - rowStartY);
                 newSubrows.push_back(newSubrow);
+                toInsertSubrow.push_back(std::make_pair(Point(newSubrowStartX, rowStartY), newSubrow));
             }
 
             //c) Part after the gate
@@ -134,7 +136,9 @@ void Row::slicing(Node *gate) {
                 newSubrowAfter->setFreeWidth(newSubrowAfter->getEndX() - newSubrowAfter->getStartX());
                 newSubrowAfter->setHeight(subrowHeight);
                 newSubrows.push_back(newSubrowAfter);
+                toInsertSubrow.push_back(std::make_pair(Point(gateEndX, rowStartY), newSubrowAfter));
             }
+            toRemoveSubrow.push_back(std::make_pair(Point(subrowStartX, rowStartY), subrow));
         }
         else{
             // No overlap, keep the original subrow

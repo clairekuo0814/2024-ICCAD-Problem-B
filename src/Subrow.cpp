@@ -30,6 +30,9 @@ void Subrow::addRejectCell(Cell *cell){
     reject_cells.insert(cell);
 }
 
+void Subrow::setRowIdx(int rowIdx){
+    this->rowIdx = rowIdx;
+}
 
 // Getters
 double Subrow::getStartX()const{
@@ -53,6 +56,10 @@ bool Subrow::hasCell(Cell *cell){
         return true;
     }
     return false;
+}
+
+int Subrow::getRowIdx()const{
+    return rowIdx;
 }
 
 std::ostream &operator<<(std::ostream &os, const Subrow &subrow){

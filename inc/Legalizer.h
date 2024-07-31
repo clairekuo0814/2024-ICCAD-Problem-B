@@ -15,6 +15,17 @@
 
 #define DEBUG_LGZ(message) std::cout << "[LEGALIZER] " << message << std::endl
 
+namespace bg = boost::geometry;
+namespace bgi = boost::geometry::index;
+
+// 2-D point with coordinate type of double in cartesian
+typedef bg::model::point<double, 2, bg::cs::cartesian> Point;
+
+class Subrow;
+// Define a Point with an ID:
+typedef std::pair<Point, Subrow *> PointWithSubrow;
+typedef bgi::rtree<PointWithSubrow, bgi::quadratic<P_PER_NODE>> SubrowRTree;
+
 class Node;
 class Row;
 class Legalizer{
@@ -24,6 +35,8 @@ private:
     std::vector<Node *> gates;
     std::vector<Row *> rows;
     Timer timer;
+    SubrowRTree rtree;
+
 
 public:
     explicit Legalizer(Manager& mgr);
@@ -34,6 +47,7 @@ private:
     void LoadFF();
     void LoadGate();
     void LoadPlacementRow();
+    void initRTree();
     void SliceRowsByRows();
     void SliceRowsByGate();
     void Tetris();
@@ -44,7 +58,8 @@ private:
     void UpdateXList(double start, double end, std::list<XTour> & xList);
     size_t FindClosestRow(Node *ff);
     int FindClosestSubrow(Node *ff, Row *row);
-    double PlaceFF(Node *ff, size_t row_idx, bool& placeable);
+    void PlaceFFWithRTree(Node *ff, std::vector<PointWithSubrow> &resultSubrows);
+    double PlaceFF(Node *ff, size_t row_idx);
     bool ContinousAndEmpty(double startX, double startY, double w, double h, int row_idx);
     
     friend class DetailPlacement;
