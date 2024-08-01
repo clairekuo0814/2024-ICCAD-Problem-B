@@ -193,6 +193,7 @@ void Parser::readNet(Manager &mgr){
             clkIdx++;
         }
     }
+    mgr.TotalClk = clkIdx;
 }
 
 void Parser::readBin(Manager &mgr){

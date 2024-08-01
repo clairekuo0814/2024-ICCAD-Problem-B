@@ -15,8 +15,7 @@ void MeanShift::run(Manager &mgr){
 }
 
 void MeanShift::buildRtree(Manager &mgr){
-    std::vector<PointWithID> pointwithids;
-    pointwithids.reserve(mgr.FF_Map.size());
+    rtrees.resize(mgr.TotalClk);
 
     // make unique id for the flipflop
     for(const auto &pair : mgr.FF_Map){
@@ -26,9 +25,8 @@ void MeanShift::buildRtree(Manager &mgr){
     for(size_t i = 0; i < FFs.size(); i++){
         FF *ff = FFs[i];
         ff->setFFIdx(i);
-        pointwithids.push_back(std::make_pair(Point(ff->getCoor().x,ff->getCoor().y), i));
+        rtrees[ff->getClkIdx()].insert(std::make_pair(Point(ff->getCoor().x,ff->getCoor().y), i));
     }
-    rtree.insert(pointwithids.begin(), pointwithids.end());
 }
 
 void MeanShift::initKNN(const Manager &mgr){
@@ -86,7 +84,7 @@ void MeanShift::shiftFFs(){
 void MeanShift::FFrunKNN(const Manager &mgr, int ffidx){
     FF *ff = FFs[ffidx];
     std::vector<PointWithID> neighbors;
-    rtree.query(bgi::nearest(Point(ff->getCoor().x, ff->getCoor().y), MAX_NEIGHBORS), std::back_inserter(neighbors));
+    rtrees[ff->getClkIdx()].query(bgi::nearest(Point(ff->getCoor().x, ff->getCoor().y), 10), std::back_inserter(neighbors));
     BOOST_FOREACH(PointWithID const &p, neighbors){
         int ffneighbor_idx = p.second;
         FF *ffneighbor = FFs[ffneighbor_idx];

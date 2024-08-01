@@ -9,7 +9,8 @@ Manager::Manager():
     NumOutput(0),
     MaxBit(0),
     NumInstances(0),
-    NumNets(0)
+    NumNets(0),
+    TotalClk(0)
     {}
 
 Manager::~Manager(){

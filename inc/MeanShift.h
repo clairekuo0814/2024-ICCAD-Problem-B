@@ -35,7 +35,7 @@ typedef bgi::rtree<PointWithID, bgi::quadratic<P_PER_NODE>> RTree;
 class FF;
 class MeanShift{
 private:
-    RTree rtree;
+    std::vector<RTree> rtrees;
     std::vector<FF *> FFs;
     std::vector<std::pair<int, int>> iterationCount;    // {iteration to coverage, ffidx}
 

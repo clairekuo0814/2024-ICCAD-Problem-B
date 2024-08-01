@@ -66,6 +66,7 @@ public:
 
     // Netlist
     int NumNets;
+    int TotalClk;
     std::unordered_map<std::string, Net> Net_Map;
 
     // for naming
