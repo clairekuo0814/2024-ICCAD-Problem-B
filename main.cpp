@@ -38,10 +38,10 @@ int main(int argc, char *argv[]){
     mgr.dumpVisual("Legalize.out");
     mgr.checker();
 
-    mgr.detailplacement();
-    mgr.getOverallCost(cost_verbose);
-    mgr.dumpVisual("DetailPlacement.out");
-    mgr.checker();
+    // mgr.detailplacement();
+    // mgr.getOverallCost(cost_verbose);
+    // mgr.dumpVisual("DetailPlacement.out");
+    // mgr.checker();
 
     mgr.dump(argv[2]);
     return 0;

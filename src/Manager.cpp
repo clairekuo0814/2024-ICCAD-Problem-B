@@ -67,6 +67,8 @@ void Manager::meanshift(){
 }
 
 void Manager::banking(){
+    legalizer = new Legalizer(*this);
+    legalizer->initial();
     Banking banking(*this);
     banking.run();
 }
@@ -77,7 +79,6 @@ void Manager::postBankingOptimize(){
 }
 
 void Manager::legalize(){
-    legalizer = new Legalizer(*this);
     legalizer->run();
 }
 

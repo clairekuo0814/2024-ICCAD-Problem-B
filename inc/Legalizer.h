@@ -2,6 +2,7 @@
 #define _LEGALIZER_H_
 
 #include "Node.h"
+#include "Cell.h"
 #include "Row.h"
 #include "Subrow.h"
 #include "Manager.h"
@@ -32,7 +33,10 @@ private:
 public:
     explicit Legalizer(Manager& mgr);
     ~Legalizer();
+    void initial();
     void run();
+    Coor FindPlace(const Coor &coor, Cell * cell);
+    void UpdateRows(FF* newFF);
 
 private:
     void LoadFF();
@@ -47,9 +51,13 @@ private:
     // Helper Function
     void UpdateXList(double start, double end, std::list<XTour> & xList);
     size_t FindClosestRow(Node *ff);
+    size_t FindClosestRow(const Coor &coor);
     int FindClosestSubrow(Node *ff, Row *row);
     double PlaceFF(Node *ff, size_t row_idx, bool& placeable);
+    void PlaceFF(const Coor &coor, Cell* cell, size_t row_idx, bool &placeable, double &minDisplacement, Coor &newCoor);
     bool ContinousAndEmpty(double startX, double startY, double w, double h, int row_idx);
+    double getDisplacement(const Coor &Coor1, const Coor &Coor2)const;
+
     
     friend class DetailPlacement;
 };
