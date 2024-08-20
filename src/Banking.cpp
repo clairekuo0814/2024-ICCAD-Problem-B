@@ -99,20 +99,22 @@ Coor Banking::getMedian(std::vector<PointWithID>& toRemoveFFs){
 Coor Banking::getBankingCoor(std::vector<PointWithID>& toRemoveFFs){
     double x = 0;
     double y = 0;
-    double weight = 0;
+    double totalWeight = 0;
+    std::vector<double> ffWeights;
     for(size_t i = 0; i < toRemoveFFs.size(); i++){
         FF* ff = FFs[toRemoveFFs[i].second];
-        weight += ff->getTNS();
-        x += ff->getTNS() * (ff->getNewCoor().x);
-        y += ff->getTNS() * (ff->getNewCoor().y);
+        double ffCriticalSlack = ff->getCriticalCoor()[0].second;   // only 1-bit FF
+        double weight = (ffCriticalSlack < 0) ? (-ffCriticalSlack) : 0;
+        totalWeight += weight;
+        ffWeights.push_back(weight);
+        x += weight * (ff->getNewCoor().x);
+        y += weight * (ff->getNewCoor().y);
     }
-    if(weight != 0){
-        x = x/weight;
-        y = y/weight;
-        // std::cout << Coor(x,y) << std::endl;
+    if(totalWeight != 0){
+        x = x/totalWeight;
+        y = y/totalWeight;
     }else{
         Coor medianCoor = getMedian(toRemoveFFs);
-        // std::cout <<"weight0:"<< medianCoor << std::endl;
         x = medianCoor.x;
         y = medianCoor.y;
     }
@@ -172,7 +174,7 @@ void Banking::doClustering(){
             
             
             if(!toRemoveFFs.empty()){
-                Coor medianCoor = getMedian(toRemoveFFs);
+                Coor medianCoor = getBankingCoor(toRemoveFFs);
                 Coor clusterCoor = mgr.legalizer->FindPlace(medianCoor, chooseCell);
                 if(clusterCoor.x == DBL_MAX && clusterCoor.y == DBL_MAX) 
                     continue; 
