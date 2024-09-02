@@ -29,9 +29,12 @@ void Legalizer::initial(){
 
 void Legalizer::run(){
     // CheckIfMBFFMove();
+    Timer t = Timer();
+    t.start();
     LoadFF();
     Tetris();
     LegalizeWriteBack();
+    t.stop();
     // timer.stop();
 }
 
@@ -415,17 +418,17 @@ void Legalizer::PredictFFLGPlace(const Coor &coor, Cell* cell, size_t row_idx, b
         const auto &subrow = subrows[i];
         if(subrow->hasCell(cell)) continue;
         double alignedStartX = rows[row_idx]->getStartCoor().x + std::ceil((int)(subrow->getStartX() - rows[row_idx]->getStartCoor().x) / rows[row_idx]->getSiteWidth()) * rows[row_idx]->getSiteWidth(); 
+        double alignedEndX = rows[row_idx]->getStartCoor().x + std::floor((int)(subrow->getEndX() - rows[row_idx]->getStartCoor().x) / rows[row_idx]->getSiteWidth()) * rows[row_idx]->getSiteWidth(); 
+        double alignedLeftX = (coor.x >= subrow->getEndX()) ? alignedEndX : alignedStartX + std::floor((int)(coor.x - alignedStartX) / rows[row_idx]->getSiteWidth()) * rows[row_idx]->getSiteWidth(); 
+        double alignedRightX = (coor.x < subrow->getEndX()) ? alignedStartX : alignedLeftX + rows[row_idx]->getSiteWidth();
         bool subrowSkip = false;
         bool subrowCanPlace = false;
-        for(int x = alignedStartX; x <= subrow->getEndX() && x != rows[row_idx]->getEndX(); x += rows[row_idx]->getSiteWidth()){
+        for(int x = alignedLeftX; x >= alignedStartX; x -= rows[row_idx]->getSiteWidth()){
             Coor currCoor = Coor(x, rows[row_idx]->getStartCoor().y);
             if(getDisplacement(coor, currCoor) > minDisplacement){
                 subrowSkip = true;
                 skip = true;
-                Coor subrowEndCoor = Coor(subrow->getEndX(), rows[row_idx]->getStartCoor().y);
-                // If current subrow can't find better solution
-                if(getDisplacement(coor, subrowEndCoor) > minDisplacement) break;
-                continue;
+                break;
             }
             bool canPlace = ContinousAndEmpty(x, rows[row_idx]->getStartCoor().y, cell->getW(), cell->getH(), row_idx);
             double displacement = getDisplacement(coor, currCoor);
@@ -437,6 +440,27 @@ void Legalizer::PredictFFLGPlace(const Coor &coor, Cell* cell, size_t row_idx, b
                     minDisplacement = displacement;
                     newCoor = currCoor;
                 }
+                break;
+            }
+        }
+        for(int x = alignedRightX; x <= subrow->getEndX() && x != rows[row_idx]->getEndX(); x += rows[row_idx]->getSiteWidth()){
+            Coor currCoor = Coor(x, rows[row_idx]->getStartCoor().y);
+            if(getDisplacement(coor, currCoor) > minDisplacement){
+                subrowSkip = true;
+                skip = true;
+                break;
+            }
+            bool canPlace = ContinousAndEmpty(x, rows[row_idx]->getStartCoor().y, cell->getW(), cell->getH(), row_idx);
+            double displacement = getDisplacement(coor, currCoor);
+
+            if(canPlace){
+                rowCanPlace = true;
+                subrowCanPlace = true;
+                if(displacement < minDisplacement){
+                    minDisplacement = displacement;
+                    newCoor = currCoor;
+                }
+                break;
             }
         }
         if(!subrowCanPlace && !subrowSkip)
@@ -459,17 +483,17 @@ double Legalizer::PlaceFF(Node *ff, size_t row_idx, bool &placeable){
         const auto &subrow = subrows[i];
         if(subrow->hasCell(ff->getCell())) continue;
         double alignedStartX = rows[row_idx]->getStartCoor().x + std::ceil((int)(subrow->getStartX() - rows[row_idx]->getStartCoor().x) / rows[row_idx]->getSiteWidth()) * rows[row_idx]->getSiteWidth(); 
+        double alignedEndX = rows[row_idx]->getStartCoor().x + std::floor((int)(subrow->getEndX() - rows[row_idx]->getStartCoor().x) / rows[row_idx]->getSiteWidth()) * rows[row_idx]->getSiteWidth(); 
+        double alignedLeftX = (ff->getGPCoor().x >= subrow->getEndX()) ? alignedEndX : alignedStartX + std::floor((int)(ff->getGPCoor().x - alignedStartX) / rows[row_idx]->getSiteWidth()) * rows[row_idx]->getSiteWidth(); 
+        double alignedRightX = (ff->getGPCoor().x < subrow->getEndX()) ? alignedStartX : alignedLeftX + rows[row_idx]->getSiteWidth();
         bool subrowSkip = false;
         bool subrowCanPlace = false;
-        for(int x = alignedStartX; x <= subrow->getEndX() && x != rows[row_idx]->getEndX(); x += rows[row_idx]->getSiteWidth()){
+        for(int x = alignedLeftX; x >= alignedStartX; x -= rows[row_idx]->getSiteWidth()){
             Coor currCoor = Coor(x, rows[row_idx]->getStartCoor().y);
             if(ff->getDisplacement(currCoor) > minDisplacement){
                 subrowSkip = true;
                 skip = true;
-                Coor subrowEndCoor = Coor(subrow->getEndX(), rows[row_idx]->getStartCoor().y);
-                // If current subrow can't find better solution
-                if(ff->getDisplacement(subrowEndCoor) > minDisplacement) break;
-                continue;
+                break;
             }
             bool canPlace = ContinousAndEmpty(x, rows[row_idx]->getStartCoor().y, ff->getW(), ff->getH(), row_idx);
             double displacement = ff->getDisplacement(currCoor);
@@ -483,13 +507,36 @@ double Legalizer::PlaceFF(Node *ff, size_t row_idx, bool &placeable){
                     ff->setIsPlace(true);
                     ff->setPlaceRowIdx(row_idx);
                 }
+                break;
+            }
+        }
+        for(int x = alignedRightX; x <= subrow->getEndX() && x != rows[row_idx]->getEndX(); x += rows[row_idx]->getSiteWidth()){
+            Coor currCoor = Coor(x, rows[row_idx]->getStartCoor().y);
+            if(ff->getDisplacement(currCoor) > minDisplacement){
+                subrowSkip = true;
+                skip = true;
+                break;
+            }
+            bool canPlace = ContinousAndEmpty(x, rows[row_idx]->getStartCoor().y, ff->getW(), ff->getH(), row_idx);
+            double displacement = ff->getDisplacement(currCoor);
+                
+            if(canPlace){
+                rowCanPlace = true;
+                subrowCanPlace = true;
+                if(displacement < minDisplacement){
+                    minDisplacement = displacement;
+                    ff->setLGCoor(currCoor);
+                    ff->setIsPlace(true);
+                    ff->setPlaceRowIdx(row_idx);
+                }
+                break;
             }
         }
         if(!subrowCanPlace && !subrowSkip)
             subrow->addRejectCell(ff->getCell());
 
     }
-    if(!skip && !rowCanPlace){
+    if(!rowCanPlace && !skip){
         placeable = false;
     }
     return minDisplacement;
