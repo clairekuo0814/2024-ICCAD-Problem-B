@@ -35,21 +35,16 @@ void Banking::bitOrdering(){
     }
 }
 
-bool Banking::chooseCandidateFF(FF* nowFF, std::vector<PointWithID>& resultFFs, std::vector<PointWithID>& toRemoveFFs, std::vector<FF*> &FFToBank, const int &targetBit){
+bool Banking::chooseCandidateFF(const Coor& legalCoor, std::vector<PointWithID>& resultFFs, std::vector<PointWithID>& toRemoveFFs, std::vector<FF*> &FFToBank, const int &targetBit, const std::vector<bool> &isClustered, const PointWithID& curFF){
     std::vector<std::pair<int, double>> nearFFs;
-    PointWithID curFF;
     for(int i = 0; i < (int)resultFFs.size(); i++){
         FF* ff = FFs[resultFFs[i].second];
-        double dis = SquareEuclideanDistance (nowFF->getNewCoor(), ff->getNewCoor());
-        if(dis == 0){
-            curFF = resultFFs[i];
-        }
-        else{   
-            ff->updateSlack();            
-            //todo
+        
+        if(curFF.second != resultFFs[i].second){   
+            // ff->updateSlack();            
             // double slack = FFs[resultFFs[i].second]->getTimingSlack("D") - std::sqrt(dis)*mgr.DisplacementDelay;
-            double slack = std::sqrt(dis)*mgr.DisplacementDelay;
-            nearFFs.push_back ({i, slack});
+            double dis = HPWL(legalCoor, ff->getNewCoor());
+            nearFFs.push_back ({i, dis});
         }
     }
 
@@ -174,30 +169,29 @@ void Banking::doClustering(){
             bgi::rtree< PointWithID, bgi::quadratic<P_PER_NODE> > rtree;
             rtree.insert(points.begin(), points.end());
             std::vector<bool> isClustered (FFs.size(), false);
-
+            
             for (size_t index = 0; index < FFs.size(); index++){
-                FF* nowFF = FFs[index];
                 if (isClustered[index]) {continue;}
+                FF* nowFF = FFs[index];
                 std::vector<PointWithID> resultFFs, toRemoveFFs;
                 resultFFs.reserve(mgr.MaxBit);
-                rtree.query(bgi::nearest(Point(nowFF->getNewCoor().x, nowFF->getNewCoor().y), mgr.MaxBit), std::back_inserter(resultFFs));
+                Coor legalCoor = mgr.legalizer->FindPlace(nowFF->getNewCoor(), chooseCell);
+                if(legalCoor.x == DBL_MAX && legalCoor.y == DBL_MAX) 
+                    continue;
+                rtree.query(bgi::nearest(Point(legalCoor.x, legalCoor.y), mgr.MaxBit), std::back_inserter(resultFFs));
+                
                 std::vector<FF*> FFToBank;
-                bool isChoose = chooseCandidateFF(nowFF, resultFFs, toRemoveFFs, FFToBank, targetBit);
+                bool isChoose = chooseCandidateFF(legalCoor, resultFFs, toRemoveFFs, FFToBank, targetBit, isClustered, points[index]);
                 
 
                 if(isChoose){
                     
-                    Coor medianCoor = getMedian(toRemoveFFs);
-                    Coor clusterCoor = mgr.legalizer->FindPlace(medianCoor, chooseCell);
-                    if(clusterCoor.x == DBL_MAX && clusterCoor.y == DBL_MAX) 
-                        continue;
-
+                    // Coor medianCoor = getMedian(toRemoveFFs);
                     // if(mgr.getCostDiff(clusterCoor, chooseCell, FFToBank) > 0)
                     //     continue;
-                    if(CostCompare(clusterCoor, chooseCell, FFToBank) < 0)
+                    if(CostCompare(legalCoor, chooseCell, FFToBank) < 0)
                         continue;
-
-                    FF* newFF = mgr.bankFF(clusterCoor, chooseCell, FFToBank);
+                    FF* newFF = mgr.bankFF(legalCoor, chooseCell, FFToBank);
                     mgr.legalizer->UpdateRows(newFF);
                     newFF->setIsLegalize(true);
                     for (size_t j = 0; j < toRemoveFFs.size(); j++)
@@ -205,7 +199,7 @@ void Banking::doClustering(){
                         isClustered[toRemoveFFs[j].second] = true;
                         FF* toRemoveFF = FFs[toRemoveFFs[j].second];
                         toRemoveFF->setClusterIdx(clusterTotalNum);
-                        toRemoveFF->setNewCoor(clusterCoor);
+                        toRemoveFF->setNewCoor(legalCoor);
                     }
                     rtree.remove (toRemoveFFs.begin(), toRemoveFFs.end());
                     clusterTotalNum++;
